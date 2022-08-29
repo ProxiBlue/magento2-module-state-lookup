@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="checkout_cart_item_renderers"/>
+    <body>
+        <referenceContainer name="cart.summary">
+            <referenceBlock name="checkout.cart.shipping">
+                <block name="checkout.cart.shipping.lookup"
+                       as="shipping_lookup"
+                       template="ProxiBlue_StateLookup::php-cart/shipping.phtml"
+                />
+            </referenceBlock>
+        </referenceContainer>
+    </body>
+</page>

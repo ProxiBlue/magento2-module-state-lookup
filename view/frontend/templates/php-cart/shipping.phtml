@@ -1,0 +1,110 @@
+<?php
+
+/*
+ * (c) Lucas van Staden <sales@proxiblue.com.au>
+ *
+ * This source file is subject to the MIT license that is bundled
+ * with this source code in the file LICENSE.
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\StoreConfig;
+
+/** @var Shipping $block */
+/** @var ViewModelRegistry $viewModels */
+
+$storeConfig = $viewModels->require(StoreConfig::class);
+
+?>
+
+<script>
+    const originalShippingInitMethod = initShippingEstimation;
+    initShippingEstimation = () => Object.assign({}, originalShippingInitMethod(), {
+
+        init($dispatch) {
+            const selectedShippingMethod = window.checkoutConfig.selectedShippingMethod;
+            if (selectedShippingMethod) {
+                this.shippingMethod = `${selectedShippingMethod.carrier_code}_${selectedShippingMethod.method_code}`
+            }
+            this.showEstimateShipping = true;
+            this.dispatch = $dispatch;
+            const regionElm = document.getElementsByName('shippingAddress.region_id');
+            const postcodeElm = document.getElementsByName('shippingAddress.postcode');
+            regionElm[0].parentNode.insertBefore(postcodeElm[0],regionElm[0]);
+        },
+
+        setPostcode(value) {
+            this.cartData.address.postcode = value;
+            this.checkoutData.shippingAddressFromData.postcode = value;
+
+            if (this.cartData.address.countryId == 'US' && value.length > 4) {
+                const browserStorage = hyva.getBrowserStorage();
+                if (browserStorage) {
+                    let lookupCache = browserStorage.getItem('zip-lookup-cache');
+                    if (lookupCache) {
+                        lookupCache = JSON.parse(lookupCache);
+                        const isCached = lookupCache.find(e => e.key === value + '|' + this.cartData.address.countryId);
+                        if (isCached) {
+                            this.setStateByCode(isCached.state);
+                            return;
+                        }
+                    }
+                }
+                const service = new google.maps.places.AutocompleteService();
+                service.getPlacePredictions({
+                        input: value,
+                        componentRestrictions: {country: this.cartData.address.countryId},
+                        strictBounds: true,
+                        fields: ["address_components"],
+                        types: ['(regions)']
+                    },
+                    (predictions, status) => {
+                        if (status == 'OK') {
+                            if (predictions.length && predictions[0].terms.length) {
+                                let state = predictions[0].terms[1].value
+                                this.setStateByCode(state);
+                                if (browserStorage) {
+                                    let lookupCache = browserStorage.getItem('zip-lookup-cache');
+                                    const cacheData = {};
+                                    cacheData.key = value + '|' + this.cartData.address.countryId;
+                                    cacheData.state = state;
+                                    if (!lookupCache) {
+                                        lookupCache = [];
+                                    } else {
+                                        lookupCache = JSON.parse(lookupCache);
+                                    }
+                                    lookupCache.push(cacheData);
+                                    browserStorage.setItem('zip-lookup-cache', JSON.stringify(lookupCache));
+                                }
+                            } else {
+                                console.log('error: no address components found in state lookup');
+                                this.setStateByCode(null);
+                            }
+                        } else {
+                            console.log('error: state lookup status was ' + status);
+                            this.setStateByCode(null);
+                        }
+                    });
+            }
+        },
+
+        setStateByCode(code) {
+            const select = document.querySelector("#region_id");
+            if (code) {
+                const option = document.querySelector("[data-code='" + code + "']");
+                select.value = option.value;
+                this.cartData.address.regionId = option.value;
+            } else {
+                select.selectedIndex = 0;
+                this.cartData.address.regionId = 0;
+            }
+            this.saveToCustomerSectionData();
+            this.fetchShippingMethods();
+        }
+    });
+</script>
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=<?php echo $storeConfig->getStoreConfig('shipping/shipper_autocomplete/google_api_key') ?>&libraries=places"
+    async defer></script>

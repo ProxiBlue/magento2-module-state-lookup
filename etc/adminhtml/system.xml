@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="shipping">
+            <group id="shipper_autocomplete" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="1"
+                   showInStore="1">
+                <label>Address Autocomplete with Cart State Lookup</label>
+                <field id="google_api_key" translate="label" sortOrder="120" showInDefault="1" showInWebsite="1"
+                       showInStore="1">
+                    <label>API Key</label>
+                    <comment><![CDATA[<a href="http://docs.shipperhq.com/setting-up-google-maps-api-keys/" target="_blank">How to obtain Google API Key</a>]]> </comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>
