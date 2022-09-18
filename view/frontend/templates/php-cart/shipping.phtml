@@ -18,9 +18,14 @@ use Hyva\Theme\ViewModel\StoreConfig;
 $storeConfig = $viewModels->require(StoreConfig::class);
 
 ?>
-
+<?php 
+    /**
+    * Don't use const/let here as it causes an issue with DOM reload of cart
+    * ref: https://hyva-themes.slack.com/archives/C01B8RV1ABG/p1663502705322489
+    **/
+?>
 <script>
-    const originalShippingInitMethod = initShippingEstimation;
+    var originalShippingInitMethod = initShippingEstimation;
     initShippingEstimation = () => Object.assign({}, originalShippingInitMethod(), {
 
         init($dispatch) {
